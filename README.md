@@ -1,3 +1,8 @@
+This is the output of a trial with amazon Kiro
+https://github.com/odonnell-anthony/kirotest
+
+its not great!
+
 # Wiki Documentation App
 
 A high-performance Python-based wiki/documentation application with PostgreSQL backend, Redis caching, and server-side rendering.
