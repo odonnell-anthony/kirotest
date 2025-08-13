@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Wiki Documentation App{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Sign In</h1>
+            <p>Access your documentation workspace</p>
+        </div>
+        
+        <form class="auth-form" method="post" action="/api/v1/auth/login">
+            <div class="form-group">
+                <label for="username" class="form-label">Username or Email</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       class="form-control" 
+                       required 
+                       autocomplete="username"
+                       placeholder="Enter your username or email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       class="form-control" 
+                       required 
+                       autocomplete="current-password"
+                       placeholder="Enter your password">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" name="remember_me" class="form-check-input">
+                    <span class="form-check-label">Remember me</span>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                Sign In
+            </button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Don't have an account? Contact your administrator.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-height) - 2 * var(--spacing-lg));
+    padding: var(--spacing-lg);
+}
+
+.auth-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--box-shadow-lg);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.auth-header h1 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--text-primary);
+}
+
+.auth-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.auth-form {
+    margin-bottom: var(--spacing-lg);
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+}
+
+.form-check-input {
+    margin: 0;
+}
+
+.form-check-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.auth-footer {
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.auth-footer p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: var(--spacing-lg);
+    }
+}
+</style>
+{% endblock %}

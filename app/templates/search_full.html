@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .search-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .search-results {
+            margin-top: 2rem;
+        }
+        .result-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            border-left: 4px solid #3498db;
+        }
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .result-title a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .result-title a:hover {
+            color: #3498db;
+        }
+        .result-summary {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        .result-meta {
+            font-size: 0.9rem;
+            color: #95a5a6;
+            display: flex;
+            gap: 1rem;
+        }
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-stats {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: #7f8c8d;
+        }
+        .breadcrumb a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="breadcrumb">
+                <a href="/">🏠 Home</a> / 
+                <a href="/docs">📄 Documents</a> / 
+                Search
+            </div>
+
+            <h2>🔍 Search Documents</h2>
+
+            <div class="search-form">
+                <form method="GET" action="/search">
+                    <input type="text" name="q" class="search-input" 
+                           placeholder="Search documents by title, content, or summary..." 
+                           value="{{ query }}" autofocus>
+                    <button type="submit" class="btn">🔍 Search</button>
+                    <a href="/docs" class="btn btn-secondary">📄 Browse All</a>
+                    <a href="/" class="btn btn-secondary">🏠 Home</a>
+                </form>
+            </div>
+
+            {% if query %}
+                {% if results %}
+                <div class="search-stats">
+                    Found {{ results|length }} document{{ 's' if results|length != 1 else '' }} matching "{{ query }}"
+                </div>
+
+                <div class="search-results">
+                    {% for doc in results %}
+                    <div class="result-item">
+                        <div class="result-title">
+                            <a href="/doc/{{ doc.id }}">{{ doc.title }}</a>
+                        </div>
+                        
+                        {% if doc.summary %}
+                        <div class="result-summary">{{ doc.summary }}</div>
+                        {% else %}
+                        <div class="result-summary">{{ doc.content[:200] }}{% if doc.content|length > 200 %}...{% endif %}</div>
+                        {% endif %}
+                        
+                        <div class="result-meta">
+                            <span>📅 Updated: {{ doc.updated_at.strftime('%Y-%m-%d') if doc.updated_at else 'Unknown' }}</span>
+                            {% if doc.slug %}
+                            <span>🔗 /{{ doc.slug }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-results">
+                    <h3>🔍 No results found</h3>
+                    <p>No documents match your search for "<strong>{{ query }}</strong>"</p>
+                    <div style="margin-top: 1rem;">
+                        <a href="/docs" class="btn">📄 Browse All Documents</a>
+                        <a href="/create" class="btn btn-secondary">✏️ Create New Document</a>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; text-align: left; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+                        <h4>Search Tips:</h4>
+                        <ul>
+                            <li>Try different keywords or phrases</li>
+                            <li>Search is case-insensitive</li>
+                            <li>Searches across titles, content, and summaries</li>
+                            <li>Use partial words (e.g., "doc" will find "document")</li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3>🔍 Full-Text Search</h3>
+                <p>Search across all your documents by title, content, and summary. The search is powered by PostgreSQL and supports:</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                    <div>
+                        <strong>✅ What's Searchable:</strong>
+                        <ul>
+                            <li>Document titles</li>
+                            <li>Full document content</li>
+                            <li>Document summaries</li>
+                            <li>Case-insensitive matching</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>🔍 Search Features:</strong>
+                        <ul>
+                            <li>Partial word matching</li>
+                            <li>Multiple word searches</li>
+                            <li>Real-time database queries</li>
+                            <li>Relevance-based results</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; padding: 1rem; background: #e8f4fd; border-radius: 4px; border-left: 4px solid #3498db;">
+                    <strong>💡 Pro Tip:</strong> Start typing in the search box above to find documents instantly. 
+                    The search runs against your PostgreSQL database and returns results in real-time.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

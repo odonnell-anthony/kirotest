@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Wiki Documentation App{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="welcome-section">
+        <h1>Welcome to Wiki Documentation</h1>
+        <p class="lead">Your collaborative knowledge base and documentation platform.</p>
+        
+        {% if not user %}
+            <div class="auth-prompt">
+                <p>Please <a href="/login">sign in</a> to access the documentation.</p>
+            </div>
+        {% elif not has_documents %}
+            <div class="getting-started">
+                <h2>Getting Started</h2>
+                <p>It looks like this is a fresh installation. Here's how to get started:</p>
+                
+                <div class="quick-actions">
+                    <a href="/editor" class="btn btn-primary">
+                        📝 Create Your First Page
+                    </a>
+                    
+                    {% if user.role == 'admin' %}
+                        <a href="/admin" class="btn btn-secondary">
+                            ⚙️ Admin Settings
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="help-cards">
+                    <div class="help-card">
+                        <h3>📄 Create Content</h3>
+                        <p>Write documentation using Markdown or our rich text editor. Organize content in folders and add tags for easy discovery.</p>
+                    </div>
+                    
+                    <div class="help-card">
+                        <h3>🔍 Search & Discover</h3>
+                        <p>Use the powerful search functionality to find content quickly. Search supports full-text search and tag filtering.</p>
+                    </div>
+                    
+                    <div class="help-card">
+                        <h3>👥 Collaborate</h3>
+                        <p>Leave comments on pages, track changes with revision history, and work together on documentation.</p>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="dashboard">
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.total_documents }}</div>
+                        <div class="stat-label">Documents</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.total_folders }}</div>
+                        <div class="stat-label">Folders</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.total_tags }}</div>
+                        <div class="stat-label">Tags</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.total_users }}</div>
+                        <div class="stat-label">Users</div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-sections">
+                    <section class="recent-activity">
+                        <h2>Recent Activity</h2>
+                        {% if recent_activity %}
+                            <div class="activity-list">
+                                {% for activity in recent_activity %}
+                                    <div class="activity-item">
+                                        <div class="activity-icon">
+                                            {% if activity.action == 'created' %}📝
+                                            {% elif activity.action == 'updated' %}✏️
+                                            {% elif activity.action == 'deleted' %}🗑️
+                                            {% else %}📄
+                                            {% endif %}
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">
+                                                <a href="{{ activity.document_path }}">{{ activity.document_title }}</a>
+                                            </div>
+                                            <div class="activity-meta">
+                                                {{ activity.action }} by {{ activity.author_name }} 
+                                                <time datetime="{{ activity.created_at.isoformat() }}">
+                                                    {{ activity.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                                </time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="section-footer">
+                                <a href="/timeline" class="btn btn-secondary">View All Activity</a>
+                            </div>
+                        {% else %}
+                            <p class="empty-state">No recent activity to display.</p>
+                        {% endif %}
+                    </section>
+                    
+                    <section class="popular-tags">
+                        <h2>Popular Tags</h2>
+                        {% if popular_tags %}
+                            <div class="tag-cloud">
+                                {% for tag in popular_tags %}
+                                    <a href="/search?tags={{ tag.name }}" 
+                                       class="tag-link"
+                                       style="font-size: {{ 0.8 + (tag.usage_count / max_tag_usage * 0.8) }}rem;">
+                                        {{ tag.name }}
+                                        <span class="tag-count">({{ tag.usage_count }})</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="empty-state">No tags created yet.</p>
+                        {% endif %}
+                    </section>
+                </div>
+                
+                <div class="quick-actions">
+                    <a href="/editor" class="btn btn-primary">
+                        📝 New Document
+                    </a>
+                    
+                    <a href="/search" class="btn btn-secondary">
+                        🔍 Search
+                    </a>
+                    
+                    {% if user.role == 'admin' %}
+                        <a href="/admin" class="btn btn-secondary">
+                            ⚙️ Admin
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-section {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.welcome-section h1 {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.lead {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+.auth-prompt {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-xl);
+}
+
+.quick-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+
+.help-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.help-card {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    text-align: left;
+}
+
+.help-card h3 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.dashboard-sections {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.dashboard-sections section {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+}
+
+.dashboard-sections h2 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-primary);
+}
+
+.activity-list {
+    space-y: var(--spacing-md);
+}
+
+.activity-item {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.activity-icon {
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.activity-title a:hover {
+    color: var(--accent-primary);
+}
+
+.activity-meta {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.tag-link {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+}
+
+.tag-link:hover {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+.tag-count {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.section-footer {
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+.empty-state {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .dashboard-sections {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .welcome-section h1 {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}

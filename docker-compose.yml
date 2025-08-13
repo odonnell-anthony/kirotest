@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: wiki-db
+    environment:
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wiki
+      POSTGRES_PASSWORD: wiki
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wiki -d wiki"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wiki-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: wiki-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wiki-network
+
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: wiki-app
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://wiki:wiki@db:5432/wiki
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - JWT_SECRET_KEY=dev-jwt-secret-change-in-production
+      - LOG_LEVEL=DEBUG
+      # Migration script environment variables
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=wiki
+      - DB_USER=wiki
+      - DB_PASSWORD=wiki
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - wiki-network
+    restart: unless-stopped
+
+  # Celery Worker (for background tasks)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: wiki-worker
+    command: celery -A app.core.celery worker --loglevel=info
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://wiki:wiki@db:5432/wiki
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      # Migration script environment variables
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=wiki
+      - DB_USER=wiki
+      - DB_PASSWORD=wiki
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wiki-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  wiki-network:
+    driver: bridge

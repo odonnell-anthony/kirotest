@@ -1,0 +1,43 @@
+# Simple development Dockerfile for Wiki Documentation App
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    libmagic1 \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set work directory
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Make entrypoint script executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/logs /app/static/css /app/static/js
+
+# Expose port
+EXPOSE 8000
+
+# Set entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# Command to run the application
+CMD ["uvicorn", "app.main_full:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Wiki Documentation App{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <div class="search-header">
+        <h1>Search Documentation</h1>
+        
+        <form class="search-form" method="get" action="/search">
+            <div class="search-input-group">
+                <input type="text" 
+                       name="q" 
+                       value="{{ query or '' }}" 
+                       class="search-input-large" 
+                       placeholder="Search for documents, content, or tags..."
+                       autocomplete="off">
+                <button type="submit" class="btn btn-primary">
+                    🔍 Search
+                </button>
+            </div>
+            
+            {% if selected_tags %}
+                <div class="selected-tags">
+                    <span class="tags-label">Tags:</span>
+                    {% for tag in selected_tags %}
+                        <span class="selected-tag">
+                            {{ tag }}
+                            <button type="button" class="tag-remove" data-tag="{{ tag }}">×</button>
+                        </span>
+                    {% endfor %}
+                    <input type="hidden" name="tags" value="{{ ','.join(selected_tags) }}">
+                </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    {% if query or selected_tags %}
+        <div class="search-results-section">
+            <div class="results-header">
+                <h2>
+                    {% if search_results %}
+                        {{ search_results|length }} result{{ 's' if search_results|length != 1 else '' }}
+                    {% else %}
+                        No results found
+                    {% endif %}
+                    
+                    {% if query %}
+                        for "{{ query }}"
+                    {% endif %}
+                    
+                    {% if selected_tags %}
+                        {% if query %}with{% else %}for{% endif %} tags: {{ ', '.join(selected_tags) }}
+                    {% endif %}
+                </h2>
+            </div>
+            
+            {% if search_results %}
+                <div class="search-results-list">
+                    {% for result in search_results %}
+                        <article class="search-result">
+                            <header class="result-header">
+                                <h3 class="result-title">
+                                    <a href="{{ result.path }}">{{ result.title }}</a>
+                                </h3>
+                                <div class="result-meta">
+                                    <span class="result-path">{{ result.path }}</span>
+                                    {% if result.tags %}
+                                        <div class="result-tags">
+                                            {% for tag in result.tags %}
+                                                <span class="result-tag">{{ tag }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </header>
+                            
+                            {% if result.excerpt %}
+                                <div class="result-excerpt">
+                                    {{ result.excerpt|safe }}
+                                </div>
+                            {% endif %}
+                            
+                            <footer class="result-footer">
+                                <span class="result-author">by {{ result.author }}</span>
+                                <span class="result-date">{{ result.updated_at.strftime('%B %d, %Y') }}</span>
+                            </footer>
+                        </article>
+                    {% endfor %}
+                </div>
+                
+                {% if has_more_results %}
+                    <div class="load-more">
+                        <button class="btn btn-secondary" id="loadMoreResults">
+                            Load More Results
+                        </button>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="no-results">
+                    <div class="no-results-icon">🔍</div>
+                    <h3>No results found</h3>
+                    <p>Try adjusting your search terms or removing some filters.</p>
+                    
+                    <div class="search-suggestions">
+                        <h4>Suggestions:</h4>
+                        <ul>
+                            <li>Check your spelling</li>
+                            <li>Try more general terms</li>
+                            <li>Use fewer keywords</li>
+                            <li>Browse by <a href="/">folders</a> instead</li>
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="search-help">
+            <div class="search-tips">
+                <h2>Search Tips</h2>
+                
+                <div class="tip-cards">
+                    <div class="tip-card">
+                        <h3>🔤 Text Search</h3>
+                        <p>Search for words or phrases in document titles and content. Use quotes for exact phrases.</p>
+                        <code>"exact phrase"</code>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h3>🏷️ Tag Search</h3>
+                        <p>Filter results by tags to find related content quickly.</p>
+                        <code>tag:api tag:documentation</code>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h3>📁 Folder Search</h3>
+                        <p>Limit search to specific folders or sections.</p>
+                        <code>folder:/docs/api</code>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h3>👤 Author Search</h3>
+                        <p>Find documents by specific authors.</p>
+                        <code>author:username</code>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="popular-searches">
+                <h2>Popular Searches</h2>
+                <div class="popular-search-links">
+                    <a href="/search?q=api" class="popular-search">API</a>
+                    <a href="/search?q=getting started" class="popular-search">Getting Started</a>
+                    <a href="/search?q=configuration" class="popular-search">Configuration</a>
+                    <a href="/search?q=troubleshooting" class="popular-search">Troubleshooting</a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.search-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.search-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.search-header h1 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-primary);
+}
+
+.search-form {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.search-input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.search-input-large {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+}
+
+.search-input-large:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.selected-tags {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.tags-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.selected-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--accent-primary);
+    color: white;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+}
+
+.tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    padding: 0;
+    margin-left: var(--spacing-xs);
+}
+
+.results-header h2 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-results-list {
+    space-y: var(--spacing-lg);
+}
+
+.search-result {
+    background-color: var(--bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--spacing-lg);
+}
+
+.result-header {
+  margin-bottom: var(--spacing-md);
+}
+
+.result-title {
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.result-title a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-size: var(--font-size-lg);
+}
+
+.result-title a:hover {
+  text-decoration: underline;
+}
+
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.result-path {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.result-tags {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.result-tag {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+}
+
+.result-excerpt {
+  margin: var(--spacing-md) 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.result-excerpt mark {
+  background-color: var(--warning);
+  color: var(--text-primary);
+  padding: 0 var(--spacing-xs);
+}
+
+.result-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-md);
+}
+
+.no-results {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.no-results-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.no-results h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.search-suggestions {
+  text-align: left;
+  max-width: 300px;
+  margin: var(--spacing-xl) auto 0;
+}
+
+.search-suggestions h4 {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.search-suggestions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.search-suggestions li {
+  padding: var(--spacing-xs) 0;
+  color: var(--text-secondary);
+}
+
+.search-help {
+  margin-top: var(--spacing-xl);
+}
+
+.search-help h2 {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.tip-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.tip-card {
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.tip-card h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+}
+
+.tip-card p {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+}
+
+.tip-card code {
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.popular-searches {
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.popular-search-links {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.popular-search {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+.popular-search:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.load-more {
+  text-align: center;
+  margin-top: var(--spacing-xl);
+}
+
+@media (max-width: 768px) {
+  .search-input-group {
+    flex-direction: column;
+  }
+  
+  .result-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+  
+  .tip-cards {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle tag removal
+    document.querySelectorAll('.tag-remove').forEach(button => {
+        button.addEventListener('click', function() {
+            const tag = this.dataset.tag;
+            const url = new URL(window.location);
+            const tags = url.searchParams.get('tags');
+            
+            if (tags) {
+                const tagList = tags.split(',').filter(t => t !== tag);
+                if (tagList.length > 0) {
+                    url.searchParams.set('tags', tagList.join(','));
+                } else {
+                    url.searchParams.delete('tags');
+                }
+                window.location.href = url.toString();
+            }
+        });
+    });
+    
+    // Handle load more results
+    const loadMoreButton = document.getElementById('loadMoreResults');
+    if (loadMoreButton) {
+        loadMoreButton.addEventListener('click', function() {
+            // Implementation for loading more results
+            console.log('Load more results');
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Document - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .preview-area {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .toolbar-btn {
+            padding: 0.5rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toolbar-btn:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="breadcrumb" style="margin-bottom: 1rem; color: #7f8c8d;">
+                <a href="/" style="color: #3498db; text-decoration: none;">🏠 Home</a> / 
+                <a href="/docs-list" style="color: #3498db; text-decoration: none;">📄 Documents</a> / 
+                Create New Document
+            </div>
+
+            <h2>✏️ Create New Document</h2>
+
+            <form id="createDocForm" onsubmit="createDocument(event)">
+                <div class="form-group">
+                    <label for="title">Document Title</label>
+                    <input type="text" id="title" name="title" required placeholder="Enter document title...">
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Content</label>
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" onclick="insertText('**', '**')" title="Bold">B</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('*', '*')" title="Italic">I</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('# ', '')" title="Heading">H1</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('## ', '')" title="Heading 2">H2</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('- ', '')" title="List">•</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('[', '](url)')" title="Link">🔗</button>
+                        <button type="button" class="toolbar-btn" onclick="togglePreview()" title="Preview">👁️</button>
+                    </div>
+                    <textarea id="content" name="content" required placeholder="Write your document content here... (Markdown supported)"></textarea>
+                </div>
+
+                <div class="preview-area" id="previewArea">
+                    <h4>Preview:</h4>
+                    <div id="previewContent"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">💾 Create Document</button>
+                    <button type="button" class="btn btn-secondary" onclick="togglePreview()">👁️ Preview</button>
+                    <a href="/docs-list" class="btn btn-secondary">❌ Cancel</a>
+                </div>
+            </form>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+                <h4>📝 Markdown Tips</h4>
+                <ul>
+                    <li><code># Heading 1</code> - Large heading</li>
+                    <li><code>## Heading 2</code> - Medium heading</li>
+                    <li><code>**bold text**</code> - Bold text</li>
+                    <li><code>*italic text*</code> - Italic text</li>
+                    <li><code>- List item</code> - Bullet point</li>
+                    <li><code>[Link text](URL)</code> - Hyperlink</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function insertText(before, after) {
+            const textarea = document.getElementById('content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            const newText = before + selectedText + after;
+            
+            textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+        }
+
+        function togglePreview() {
+            const previewArea = document.getElementById('previewArea');
+            const content = document.getElementById('content').value;
+            const previewContent = document.getElementById('previewContent');
+            
+            if (previewArea.style.display === 'none' || previewArea.style.display === '') {
+                // Simple markdown-like preview (basic implementation)
+                let html = content
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/\n/gim, '<br>');
+                
+                previewContent.innerHTML = html;
+                previewArea.style.display = 'block';
+            } else {
+                previewArea.style.display = 'none';
+            }
+        }
+
+        async function createDocument(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            
+            try {
+                const response = await fetch('/api/documents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('Document created successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = `/doc/${result.id}`;
+                    }, 1500);
+                } else {
+                    showAlert('Error creating document', 'error');
+                }
+            } catch (error) {
+                showAlert('Error creating document: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

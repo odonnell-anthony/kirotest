@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .feature-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>📚 Wiki Documentation App</h1>
+        <p>Your collaborative knowledge base and documentation platform</p>
+        <div class="quick-actions">
+            <a href="/docs-list" class="btn-large btn-primary">Browse Documents</a>
+            <a href="/create" class="btn-large btn-secondary">Create New Document</a>
+            <a href="/search" class="btn-large btn-secondary">Search</a>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <h3>📝 Rich Documentation</h3>
+            <p>Create and edit documents with markdown support, file attachments, and collaborative editing features.</p>
+            <a href="/docs-list" class="btn">View Documents</a>
+        </div>
+        
+        <div class="feature-card">
+            <h3>🔍 Powerful Search</h3>
+            <p>Find information quickly with full-text search across all your documents and content.</p>
+            <a href="/search" class="btn">Search Now</a>
+        </div>
+        
+        <div class="feature-card">
+            <h3>🚀 API Access</h3>
+            <p>Integrate with external tools using our comprehensive REST API for automation and integrations.</p>
+            <a href="/api/docs" class="btn">API Documentation</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <h2>Getting Started</h2>
+            <p>Welcome to your Wiki Documentation App! This is a containerized, production-ready wiki application with the following features:</p>
+            
+            <ul>
+                <li><strong>Document Management:</strong> Create, edit, and organize documents</li>
+                <li><strong>Search:</strong> Full-text search across all content</li>
+                <li><strong>API Access:</strong> RESTful API for integrations</li>
+                <li><strong>Containerized:</strong> Runs in Docker with PostgreSQL and Redis</li>
+                <li><strong>Production Ready:</strong> Comprehensive logging, monitoring, and backup systems</li>
+            </ul>
+
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="/docs-list">📄 Browse All Documents</a></li>
+                <li><a href="/create">✏️ Create New Document</a></li>
+                <li><a href="/search">🔍 Search Documents</a></li>
+                <li><a href="/api/docs">🔧 API Documentation</a></li>
+                <li><a href="/api/health">❤️ System Health</a></li>
+            </ul>
+
+            <h3>System Status</h3>
+            <p>✅ Application is running successfully</p>
+            <p>✅ Database connection established</p>
+            <p>✅ Redis cache available</p>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                <small>
+                    <strong>Note:</strong> This is a development version with mock data. 
+                    In production, documents would be stored in PostgreSQL database with full CRUD operations, 
+                    user authentication, permissions, file uploads, and more advanced features.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

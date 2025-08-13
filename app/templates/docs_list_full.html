@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .doc-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .doc-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            transition: transform 0.2s;
+        }
+        .doc-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .doc-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .doc-title a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .doc-title a:hover {
+            color: #3498db;
+        }
+        .doc-summary {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        .doc-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #95a5a6;
+            margin-bottom: 1rem;
+        }
+        .doc-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-small:hover {
+            background: #2980b9;
+        }
+        .btn-small.btn-edit {
+            background: #f39c12;
+        }
+        .btn-small.btn-edit:hover {
+            background: #e67e22;
+        }
+        .btn-small.btn-delete {
+            background: #e74c3c;
+        }
+        .btn-small.btn-delete:hover {
+            background: #c0392b;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .empty-state h3 {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="toolbar">
+                <h2>{{ title }} ({{ documents|length }} documents)</h2>
+                <div>
+                    <a href="/create" class="btn">✏️ Create New Document</a>
+                    <a href="/search" class="btn">🔍 Search</a>
+                    <a href="/" class="btn btn-secondary">🏠 Home</a>
+                </div>
+            </div>
+
+            {% if documents %}
+            <div class="doc-list">
+                {% for doc in documents %}
+                <div class="doc-item">
+                    <div class="doc-title">
+                        <a href="/doc/{{ doc.id }}">{{ doc.title }}</a>
+                    </div>
+                    
+                    <div class="doc-meta">
+                        <span>📅 Updated: {{ doc.updated_at.strftime('%Y-%m-%d %H:%M') if doc.updated_at else 'Unknown' }}</span>
+                        <span>🔗 /{{ doc.slug or doc.id }}</span>
+                    </div>
+                    
+                    {% if doc.summary %}
+                    <div class="doc-summary">{{ doc.summary }}</div>
+                    {% endif %}
+                    
+                    <div class="doc-actions">
+                        <a href="/doc/{{ doc.id }}" class="btn-small">📖 Read</a>
+                        <a href="/doc/{{ doc.id }}/edit" class="btn-small btn-edit">✏️ Edit</a>
+                        <button onclick="deleteDocument('{{ doc.id }}', '{{ doc.title }}')" class="btn-small btn-delete">🗑️ Delete</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <h3>📄 No documents found</h3>
+                <p>Get started by creating your first document!</p>
+                <a href="/create" class="btn btn-large">✏️ Create First Document</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function deleteDocument(docId, docTitle) {
+            if (!confirm(`Are you sure you want to delete "${docTitle}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/doc/${docId}/delete`, {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    showAlert('Document deleted successfully!', 'success');
+                    // Reload the page after a short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('Error deleting document', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting document: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

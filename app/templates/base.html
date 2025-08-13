@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme or 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Wiki Documentation App{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Meta tags -->
+    <meta name="description" content="{% block description %}High-performance wiki and documentation application{% endblock %}">
+    <meta name="author" content="Wiki Documentation App">
+    
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
+                ☰
+            </button>
+            
+            <a href="/" class="header-brand">
+                📚 Wiki Docs
+            </a>
+            
+            <nav class="header-nav">
+                {% if user %}
+                    <div class="user-menu">
+                        <span class="user-name">{{ user.username }}</span>
+                        {% if user.role == 'admin' %}
+                            <a href="/admin" class="btn btn-secondary">Admin</a>
+                        {% endif %}
+                        <a href="/logout" class="btn btn-secondary">Logout</a>
+                    </div>
+                {% else %}
+                    <a href="/login" class="btn">Login</a>
+                {% endif %}
+                
+                <button class="theme-toggle" aria-label="Toggle theme">
+                    {{ '☀️' if theme == 'dark' else '🌙' }}
+                </button>
+            </nav>
+        </header>
+        
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+            <div class="nav-tree">
+                <!-- Search -->
+                <div class="search-container">
+                    <input type="text" 
+                           class="search-input" 
+                           placeholder="Search documentation..." 
+                           autocomplete="off"
+                           data-search-url="/api/v1/search/autocomplete">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                
+                <!-- Navigation Tree -->
+                <nav class="folder-tree" aria-label="Documentation navigation">
+                    {% block navigation %}
+                        {% if folder_tree %}
+                            {{ render_folder_tree(folder_tree) }}
+                        {% else %}
+                            <div class="nav-item">
+                                <a href="/editor" class="nav-link">
+                                    📄 Create First Page
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endblock %}
+                </nav>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="app-main">
+            {% block breadcrumbs %}
+                {% if breadcrumbs %}
+                    <nav class="breadcrumbs" aria-label="Breadcrumb navigation">
+                        <ol class="breadcrumb-list">
+                            {% for crumb in breadcrumbs %}
+                                <li class="breadcrumb-item">
+                                    {% if crumb.url and not loop.last %}
+                                        <a href="{{ crumb.url }}">{{ crumb.title }}</a>
+                                    {% else %}
+                                        <span>{{ crumb.title }}</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </nav>
+                {% endif %}
+            {% endblock %}
+            
+            {% block messages %}
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="message message-{{ message.type }}">
+                                {{ message.text }}
+                                <button class="message-close" aria-label="Close message">×</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endblock %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="/static/js/base.js"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Flash messages from server -->
+    {% if flash_messages %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for message in flash_messages %}
+                    window.wikiApp.showNotification('{{ message.text|e }}', '{{ message.type }}');
+                {% endfor %}
+            });
+        </script>
+    {% endif %}
+</body>
+</html>
+
+{# Macro for rendering folder tree #}
+{% macro render_folder_tree(folders, level=0) %}
+    {% for item in folders %}
+        {% if item.type == 'folder' %}
+            <div class="nav-item nav-folder" data-path="{{ item.path }}" data-title="{{ item.name }}">
+                <div class="nav-link">
+                    <button class="nav-folder-toggle {{ 'expanded' if item.expanded else '' }}" 
+                            aria-expanded="{{ 'true' if item.expanded else 'false' }}"
+                            aria-label="Toggle {{ item.name }} folder">
+                        ▶
+                    </button>
+                    <span class="icon icon-folder">📁</span>
+                    <span class="nav-text">{{ item.name }}</span>
+                    <button class="nav-menu-button" aria-label="Folder options">⋯</button>
+                </div>
+                {% if item.children %}
+                    <div class="nav-folder-children {{ 'collapsed' if not item.expanded else '' }}">
+                        {{ render_folder_tree(item.children, level + 1) }}
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="nav-item" data-path="{{ item.path }}" data-title="{{ item.title }}">
+                <a href="{{ item.path }}" 
+                   class="nav-link {{ 'active' if item.active else '' }}"
+                   title="{{ item.title }}">
+                    <span class="icon icon-document">📄</span>
+                    <span class="nav-text">{{ item.title }}</span>
+                    <button class="nav-menu-button" aria-label="Page options">⋯</button>
+                </a>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

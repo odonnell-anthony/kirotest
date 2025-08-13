@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Document - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .preview-area {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+        .toolbar-btn {
+            padding: 0.5rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toolbar-btn:hover {
+            background: #e9ecef;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #dc3545;
+        }
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: #7f8c8d;
+        }
+        .breadcrumb a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="breadcrumb">
+                <a href="/">🏠 Home</a> / 
+                <a href="/docs">📄 Documents</a> / 
+                Create New Document
+            </div>
+
+            <h2>✏️ Create New Document</h2>
+
+            {% if error %}
+            <div class="error-message">
+                <strong>Error:</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/create">
+                <div class="form-group">
+                    <label for="title">Document Title *</label>
+                    <input type="text" id="title" name="title" required 
+                           placeholder="Enter document title..." 
+                           value="{{ form_data.title if form_data else '' }}">
+                    <small style="color: #7f8c8d;">A URL-friendly slug will be generated automatically</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="summary">Summary (Optional)</label>
+                    <input type="text" id="summary" name="summary" 
+                           placeholder="Brief description of the document..." 
+                           value="{{ form_data.summary if form_data else '' }}">
+                    <small style="color: #7f8c8d;">If left empty, will be auto-generated from content</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Content *</label>
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" onclick="insertText('**', '**')" title="Bold">B</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('*', '*')" title="Italic">I</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('# ', '')" title="Heading">H1</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('## ', '')" title="Heading 2">H2</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('### ', '')" title="Heading 3">H3</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('- ', '')" title="List">•</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('1. ', '')" title="Numbered List">1.</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('[', '](url)')" title="Link">🔗</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('`', '`')" title="Code">&lt;/&gt;</button>
+                        <button type="button" class="toolbar-btn" onclick="togglePreview()" title="Preview">👁️</button>
+                    </div>
+                    <textarea id="content" name="content" required 
+                              placeholder="Write your document content here... (Markdown supported)">{{ form_data.content if form_data else '' }}</textarea>
+                </div>
+
+                <div class="preview-area" id="previewArea">
+                    <h4>Preview:</h4>
+                    <div id="previewContent"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">💾 Create Document</button>
+                    <button type="button" class="btn btn-secondary" onclick="togglePreview()">👁️ Toggle Preview</button>
+                    <a href="/docs" class="btn btn-secondary">❌ Cancel</a>
+                </div>
+            </form>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+                <h4>📝 Markdown Tips</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div>
+                        <strong>Headers:</strong><br>
+                        <code># Large Header</code><br>
+                        <code>## Medium Header</code><br>
+                        <code>### Small Header</code>
+                    </div>
+                    <div>
+                        <strong>Text Formatting:</strong><br>
+                        <code>**bold text**</code><br>
+                        <code>*italic text*</code><br>
+                        <code>`inline code`</code>
+                    </div>
+                    <div>
+                        <strong>Lists:</strong><br>
+                        <code>- Bullet point</code><br>
+                        <code>1. Numbered item</code><br>
+                        <code>- [x] Checkbox</code>
+                    </div>
+                    <div>
+                        <strong>Links & More:</strong><br>
+                        <code>[Link text](URL)</code><br>
+                        <code>![Image](URL)</code><br>
+                        <code>&gt; Quote text</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function insertText(before, after) {
+            const textarea = document.getElementById('content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            const newText = before + selectedText + after;
+            
+            textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+        }
+
+        function togglePreview() {
+            const previewArea = document.getElementById('previewArea');
+            const content = document.getElementById('content').value;
+            const previewContent = document.getElementById('previewContent');
+            
+            if (previewArea.style.display === 'none' || previewArea.style.display === '') {
+                // Simple markdown-like preview (basic implementation)
+                let html = content
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                    .replace(/`(.*?)`/gim, '<code>$1</code>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>')
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+                    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+                    .replace(/\n/gim, '<br>');
+                
+                // Wrap consecutive <li> elements in <ul>
+                html = html.replace(/(<li>.*?<\/li>)(\s*<br>\s*<li>.*?<\/li>)*/gim, '<ul>$&</ul>');
+                html = html.replace(/<br>\s*(<li>)/gim, '$1');
+                html = html.replace(/(<\/li>)\s*<br>/gim, '$1');
+                
+                previewContent.innerHTML = html;
+                previewArea.style.display = 'block';
+            } else {
+                previewArea.style.display = 'none';
+            }
+        }
+
+        // Auto-generate slug preview
+        document.getElementById('title').addEventListener('input', function() {
+            const title = this.value;
+            const slug = title.toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[-\s]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            
+            // Show slug preview
+            let slugPreview = document.getElementById('slugPreview');
+            if (!slugPreview) {
+                slugPreview = document.createElement('small');
+                slugPreview.id = 'slugPreview';
+                slugPreview.style.color = '#7f8c8d';
+                this.parentNode.appendChild(slugPreview);
+            }
+            slugPreview.textContent = slug ? `URL will be: /doc/slug/${slug}` : '';
+        });
+    </script>
+</body>
+</html>

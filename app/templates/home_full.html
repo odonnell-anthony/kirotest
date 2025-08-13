@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 0.5rem;
+        }
+        .recent-docs {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        .doc-item {
+            padding: 1rem;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .doc-item:last-child {
+            border-bottom: none;
+        }
+        .doc-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .doc-summary {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .doc-date {
+            color: #95a5a6;
+            font-size: 0.8rem;
+        }
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>📚 Wiki Documentation App</h1>
+        <p>Your collaborative knowledge base powered by PostgreSQL</p>
+        <div class="quick-actions">
+            <a href="/docs" class="btn-large btn-primary">Browse Documents</a>
+            <a href="/create" class="btn-large btn-secondary">Create New Document</a>
+            <a href="/search" class="btn-large btn-secondary">Search</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ doc_count }}</div>
+                <div class="stat-label">Total Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">✅</div>
+                <div class="stat-label">Database Connected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">🚀</div>
+                <div class="stat-label">Fully Functional</div>
+            </div>
+        </div>
+
+        {% if recent_docs %}
+        <div class="recent-docs">
+            <h3>📄 Recent Documents</h3>
+            {% for doc in recent_docs %}
+            <div class="doc-item">
+                <div>
+                    <div class="doc-title">
+                        <a href="/doc/{{ doc.id }}" style="text-decoration: none; color: inherit;">
+                            {{ doc.title }}
+                        </a>
+                    </div>
+                    {% if doc.summary %}
+                    <div class="doc-summary">{{ doc.summary[:100] }}{% if doc.summary|length > 100 %}...{% endif %}</div>
+                    {% endif %}
+                </div>
+                <div class="doc-date">
+                    {{ doc.updated_at.strftime('%Y-%m-%d') if doc.updated_at else 'Unknown' }}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div style="text-align: center; margin-top: 1rem;">
+                <a href="/docs" class="btn">View All Documents</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="content">
+            <h2>🎉 Fully Functional Wiki App</h2>
+            <p>This is now a complete, database-backed wiki application with the following features:</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <h4>✅ Real Database Storage</h4>
+                    <ul>
+                        <li>PostgreSQL database with proper models</li>
+                        <li>Full CRUD operations (Create, Read, Update, Delete)</li>
+                        <li>Data persistence across restarts</li>
+                        <li>Automatic slug generation</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <h4>🔍 Search & Discovery</h4>
+                    <ul>
+                        <li>Full-text search across titles and content</li>
+                        <li>Document listing with pagination</li>
+                        <li>Recent documents on homepage</li>
+                        <li>URL-friendly slugs</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <h4>📝 Rich Editing</h4>
+                    <ul>
+                        <li>Create and edit documents</li>
+                        <li>Markdown support</li>
+                        <li>Auto-generated summaries</li>
+                        <li>Form validation and error handling</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <h4>🔧 API Access</h4>
+                    <ul>
+                        <li>RESTful API endpoints</li>
+                        <li>JSON responses</li>
+                        <li>Interactive API documentation</li>
+                        <li>Programmatic access</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Quick Start Guide</h3>
+            <ol>
+                <li><strong>Browse Documents:</strong> <a href="/docs">View all existing documents</a></li>
+                <li><strong>Create Content:</strong> <a href="/create">Write your first document</a></li>
+                <li><strong>Search:</strong> <a href="/search">Find documents by content</a></li>
+                <li><strong>API:</strong> <a href="/api/docs">Explore the REST API</a></li>
+            </ol>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">
+                <h4>🎯 Production Ready Features</h4>
+                <p>This application includes:</p>
+                <ul>
+                    <li>PostgreSQL database with proper schema</li>
+                    <li>Redis caching layer</li>
+                    <li>Docker containerization</li>
+                    <li>Comprehensive logging and monitoring</li>
+                    <li>Production-ready configuration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

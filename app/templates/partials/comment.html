@@ -1,0 +1,76 @@
+<!-- Single comment template -->
+<div class="comment" data-comment-id="{{ comment.id }}">
+    <div class="comment-header">
+        <div class="comment-author">
+            <strong>{{ comment.author.username }}</strong>
+        </div>
+        <div class="comment-meta">
+            <time datetime="{{ comment.created_at.isoformat() }}">
+                {{ comment.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+            </time>
+            {% if comment.updated_at != comment.created_at %}
+                <span class="edited">(edited)</span>
+            {% endif %}
+        </div>
+        <div class="comment-actions">
+            <button class="comment-action-btn" onclick="replyToComment('{{ comment.id }}')">
+                Reply
+            </button>
+            {% if user.id == comment.author_id or user.role == 'admin' %}
+                <button class="comment-action-btn" onclick="editComment('{{ comment.id }}')">
+                    Edit
+                </button>
+                <button class="comment-action-btn danger" onclick="deleteComment('{{ comment.id }}')">
+                    Delete
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="comment-content">
+        <div class="comment-text" id="comment-text-{{ comment.id }}">
+            {{ comment.content | markdown | safe }}
+        </div>
+        
+        <!-- Edit form (hidden by default) -->
+        <div class="comment-edit-form" id="comment-edit-{{ comment.id }}" style="display: none;">
+            <form onsubmit="updateComment(event, '{{ comment.id }}')">
+                <textarea name="content" rows="3" required>{{ comment.content }}</textarea>
+                <div class="comment-edit-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cancelEditComment('{{ comment.id }}')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reply form (hidden by default) -->
+    <div class="comment-reply-form" id="comment-reply-{{ comment.id }}" style="display: none;">
+        <form onsubmit="addReply(event, '{{ comment.id }}')">
+            <textarea name="content" placeholder="Write a reply..." rows="3" required></textarea>
+            <div class="comment-reply-actions">
+                <button type="button" class="btn btn-secondary" onclick="cancelReply('{{ comment.id }}')">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Reply
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Nested replies -->
+    {% if comment.replies %}
+        <div class="comment-replies">
+            {% for reply in comment.replies %}
+                {% with comment=reply %}
+                    {% include 'partials/comment.html' %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

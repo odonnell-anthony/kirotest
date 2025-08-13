@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+        .toolbar-btn {
+            padding: 0.5rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toolbar-btn:hover {
+            background: #e9ecef;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #dc3545;
+        }
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: #7f8c8d;
+        }
+        .breadcrumb a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .doc-info {
+            background: #e8f4fd;
+            padding: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="breadcrumb">
+                <a href="/">🏠 Home</a> / 
+                <a href="/docs">📄 Documents</a> / 
+                <a href="/doc/{{ document.id }}">{{ document.title }}</a> /
+                Edit
+            </div>
+
+            <h2>✏️ Edit Document</h2>
+
+            {% if error %}
+            <div class="error-message">
+                <strong>Error:</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="doc-info">
+                <strong>Editing:</strong> {{ document.title }}<br>
+                <strong>Created:</strong> {{ document.created_at.strftime('%Y-%m-%d %H:%M') if document.created_at else 'Unknown' }}<br>
+                <strong>Last Updated:</strong> {{ document.updated_at.strftime('%Y-%m-%d %H:%M') if document.updated_at else 'Unknown' }}
+            </div>
+
+            <form method="POST" action="/doc/{{ document.id }}/edit">
+                <div class="form-group">
+                    <label for="title">Document Title *</label>
+                    <input type="text" id="title" name="title" required 
+                           placeholder="Enter document title..." 
+                           value="{{ form_data.title if form_data else document.title }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="summary">Summary (Optional)</label>
+                    <input type="text" id="summary" name="summary" 
+                           placeholder="Brief description of the document..." 
+                           value="{{ form_data.summary if form_data else (document.summary or '') }}">
+                    <small style="color: #7f8c8d;">If left empty, will be auto-generated from content</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Content *</label>
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" onclick="insertText('**', '**')" title="Bold">B</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('*', '*')" title="Italic">I</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('# ', '')" title="Heading">H1</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('## ', '')" title="Heading 2">H2</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('### ', '')" title="Heading 3">H3</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('- ', '')" title="List">•</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('1. ', '')" title="Numbered List">1.</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('[', '](url)')" title="Link">🔗</button>
+                        <button type="button" class="toolbar-btn" onclick="insertText('`', '`')" title="Code">&lt;/&gt;</button>
+                    </div>
+                    <textarea id="content" name="content" required 
+                              placeholder="Write your document content here...">{{ form_data.content if form_data else document.content }}</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">💾 Save Changes</button>
+                    <a href="/doc/{{ document.id }}" class="btn btn-secondary">👁️ View Document</a>
+                    <a href="/docs" class="btn btn-secondary">📄 All Documents</a>
+                    <a href="/doc/{{ document.id }}" class="btn btn-secondary">❌ Cancel</a>
+                </div>
+            </form>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+                <h4>📝 Editing Tips</h4>
+                <ul>
+                    <li>Changes are saved immediately when you submit the form</li>
+                    <li>The document slug will be updated if you change the title</li>
+                    <li>Use markdown formatting for rich text (see create page for syntax)</li>
+                    <li>Summary will be auto-generated from content if left empty</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function insertText(before, after) {
+            const textarea = document.getElementById('content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            const newText = before + selectedText + after;
+            
+            textarea.value = textarea.value.substring(0, start) + newText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+        }
+    </script>
+</body>
+</html>

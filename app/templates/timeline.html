@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline - Wiki Documentation App{% endblock %}
+
+{% block content %}
+<div class="timeline-page">
+    <div class="timeline-header">
+        <h1>Recent Activity</h1>
+        <p>Track changes and updates across your documentation</p>
+    </div>
+    
+    {% if activities %}
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+            
+            {% for activity in activities %}
+                <div class="timeline-item">
+                    <div class="timeline-marker">
+                        <div class="timeline-icon">
+                            {% if activity.action == 'created' %}📝
+                            {% elif activity.action == 'updated' %}✏️
+                            {% elif activity.action == 'deleted' %}🗑️
+                            {% elif activity.action == 'published' %}📢
+                            {% elif activity.action == 'commented' %}💬
+                            {% else %}📄
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-content">
+                        <div class="timeline-card">
+                            <div class="timeline-card-header">
+                                <h3 class="timeline-title">
+                                    {% if activity.document_path %}
+                                        <a href="{{ activity.document_path }}">{{ activity.document_title }}</a>
+                                    {% else %}
+                                        {{ activity.document_title }}
+                                    {% endif %}
+                                </h3>
+                                <time class="timeline-time" datetime="{{ activity.created_at.isoformat() }}">
+                                    {{ activity.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </time>
+                            </div>
+                            
+                            <div class="timeline-card-body">
+                                <div class="timeline-action">
+                                    <span class="action-badge action-{{ activity.action }}">
+                                        {{ activity.action.title() }}
+                                    </span>
+                                    by 
+                                    <span class="timeline-author">{{ activity.author_name }}</span>
+                                </div>
+                                
+                                {% if activity.summary %}
+                                    <div class="timeline-summary">
+                                        {{ activity.summary }}
+                                    </div>
+                                {% endif %}
+                                
+                                {% if activity.changes %}
+                                    <div class="timeline-changes">
+                                        <details class="changes-details">
+                                            <summary>View Changes</summary>
+                                            <div class="changes-content">
+                                                {% for change in activity.changes %}
+                                                    <div class="change-item">
+                                                        <span class="change-field">{{ change.field }}:</span>
+                                                        {% if change.old_value %}
+                                                            <span class="change-old">{{ change.old_value }}</span>
+                                                            →
+                                                        {% endif %}
+                                                        <span class="change-new">{{ change.new_value }}</span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </details>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if activity.tags %}
+                                    <div class="timeline-tags">
+                                        {% for tag in activity.tags %}
+                                            <span class="timeline-tag">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="timeline-footer">
+            <button class="btn btn-secondary" id="loadMoreActivity">
+                Load More Activity
+            </button>
+        </div>
+    {% else %}
+        <div class="empty-timeline">
+            <div class="empty-timeline-icon">📅</div>
+            <h2>No Activity Yet</h2>
+            <p>When documents are created, updated, or commented on, they'll appear here.</p>
+            <a href="/editor" class="btn btn-primary">Create Your First Document</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.timeline-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.timeline-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.timeline-header h1 {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.timeline-header p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-lg);
+}
+
+.timeline-container {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: var(--spacing-xl);
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline-icon {
+    width: 2rem;
+    height: 2rem;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+}
+
+.timeline-content {
+    margin-left: 1rem;
+}
+
+.timeline-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+}
+
+.timeline-card-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+}
+
+.timeline-title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+}
+
+.timeline-title a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+.timeline-title a:hover {
+    text-decoration: underline;
+}
+
+.timeline-time {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+}
+
+.timeline-card-body {
+    padding: var(--spacing-lg);
+}
+
+.timeline-action {
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.action-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.action-created {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: var(--success);
+}
+
+.action-updated {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: var(--info);
+}
+
+.action-deleted {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--danger);
+}
+
+.action-published {
+    background-color: rgba(102, 16, 242, 0.1);
+    color: var(--accent-secondary);
+}
+
+.action-commented {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--warning);
+}
+
+.timeline-author {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.timeline-summary {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.timeline-changes {
+    margin-bottom: var(--spacing-md);
+}
+
+.changes-details {
+    background-color: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-sm);
+}
+
+.changes-details summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding: var(--spacing-xs);
+}
+
+.changes-details summary:hover {
+    color: var(--accent-primary);
+}
+
+.changes-content {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-top: 1px solid var(--border-color);
+}
+
+.change-item {
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+}
+
+.change-field {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.change-old {
+    color: var(--danger);
+    text-decoration: line-through;
+}
+
+.change-new {
+    color: var(--success);
+    font-weight: 500;
+}
+
+.timeline-tags {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.timeline-tag {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+}
+
+.timeline-footer {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+}
+
+.empty-timeline {
+    text-align: center;
+    padding: var(--spacing-xl);
+}
+
+.empty-timeline-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+}
+
+.empty-timeline h2 {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.empty-timeline p {
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .timeline-container {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-marker {
+        left: -1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    .timeline-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .timeline-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .timeline-action {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle load more activity
+    const loadMoreButton = document.getElementById('loadMoreActivity');
+    if (loadMoreButton) {
+        loadMoreButton.addEventListener('click', function() {
+            // Implementation for loading more activity
+            console.log('Load more activity');
+        });
+    }
+    
+    // Format relative time
+    document.querySelectorAll('.timeline-time').forEach(timeElement => {
+        const datetime = timeElement.getAttribute('datetime');
+        if (datetime) {
+            const date = new Date(datetime);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            let relativeTime;
+            if (diffMins < 1) {
+                relativeTime = 'Just now';
+            } else if (diffMins < 60) {
+                relativeTime = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+                relativeTime = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+            } else if (diffDays < 7) {
+                relativeTime = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+            } else {
+                relativeTime = timeElement.textContent; // Keep original format
+            }
+            
+            if (relativeTime !== timeElement.textContent) {
+                timeElement.title = timeElement.textContent;
+                timeElement.textContent = relativeTime;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

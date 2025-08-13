@@ -1,0 +1,379 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with Security Hardening
+  db:
+    image: postgres:15-alpine
+    container_name: wiki-db-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-wiki}
+      POSTGRES_USER: ${POSTGRES_USER:-wiki}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C --auth-host=scram-sha-256"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./scripts/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c log_statement=all
+      -c log_min_duration_statement=1000
+      -c shared_preload_libraries=pg_stat_statements
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wiki} -d ${POSTGRES_DB:-wiki}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Redis Cache with Security
+  redis:
+    image: redis:7-alpine
+    container_name: wiki-redis-prod
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --tcp-keepalive 300
+      --timeout 300
+    secrets:
+      - redis_password
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Load Balancer (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: wiki-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - logs_data:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Main Application with Security Hardening
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: wiki-app:production
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-wiki}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-wiki}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY_FILE=/run/secrets/secret_key
+      - JWT_SECRET_KEY_FILE=/run/secrets/jwt_secret_key
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - WORKERS=4
+      - MAX_UPLOAD_SIZE=104857600  # 100MB
+    secrets:
+      - secret_key
+      - jwt_secret_key
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /app/tmp
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+      replicas: 2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
+
+  # Celery Worker with Resource Limits
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: wiki-app:production
+    command: >
+      celery -A app.core.celery worker
+      --loglevel=info
+      --concurrency=4
+      --max-tasks-per-child=1000
+      --time-limit=300
+      --soft-time-limit=240
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-wiki}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-wiki}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY_FILE=/run/secrets/secret_key
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    secrets:
+      - secret_key
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /app/tmp
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+      replicas: 2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Celery Beat Scheduler
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: wiki-app:production
+    command: celery -A app.core.celery beat --loglevel=info --schedule=/app/tmp/celerybeat-schedule
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-wiki}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-wiki}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY_FILE=/run/secrets/secret_key
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    secrets:
+      - secret_key
+    volumes:
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /app/tmp
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Database Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: wiki-backup-prod
+    environment:
+      PGPASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_USER: ${POSTGRES_USER:-wiki}
+      POSTGRES_DB: ${POSTGRES_DB:-wiki}
+    secrets:
+      - postgres_password
+    volumes:
+      - backup_data:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    command: >
+      sh -c "
+      while true; do
+        sleep 86400;
+        /backup.sh;
+      done"
+    depends_on:
+      - db
+    networks:
+      - wiki-network
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+# Docker Secrets for Sensitive Data
+secrets:
+  postgres_password:
+    external: true
+  redis_password:
+    external: true
+  secret_key:
+    external: true
+  jwt_secret_key:
+    external: true
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/wiki/data/postgres
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/wiki/data/redis
+  uploads_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/wiki/data/uploads
+  logs_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/wiki/logs
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/wiki/backups
+
+networks:
+  wiki-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

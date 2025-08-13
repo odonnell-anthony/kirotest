@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.title }} - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .doc-header {
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        .doc-title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .doc-meta {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .doc-content {
+            line-height: 1.6;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            white-space: pre-wrap;
+        }
+        .doc-actions {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: #7f8c8d;
+        }
+        .breadcrumb a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .doc-slug {
+            background: #ecf0f1;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="breadcrumb">
+                <a href="/">🏠 Home</a> / 
+                <a href="/docs">📄 Documents</a> / 
+                {{ document.title }}
+            </div>
+
+            <div class="doc-header">
+                <h1 class="doc-title">{{ document.title }}</h1>
+                <div class="doc-meta">
+                    <span>📅 Created: {{ document.created_at.strftime('%Y-%m-%d %H:%M') if document.created_at else 'Unknown' }}</span>
+                    <span>🔄 Updated: {{ document.updated_at.strftime('%Y-%m-%d %H:%M') if document.updated_at else 'Unknown' }}</span>
+                    <span>📄 ID: {{ document.id }}</span>
+                    {% if document.slug %}
+                    <span>🔗 Slug: <span class="doc-slug">{{ document.slug }}</span></span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if document.summary %}
+            <div style="background: #e8f4fd; padding: 1rem; border-radius: 4px; border-left: 4px solid #3498db; margin-bottom: 2rem;">
+                <strong>Summary:</strong> {{ document.summary }}
+            </div>
+            {% endif %}
+
+            <div class="doc-content">{{ document.content }}</div>
+
+            <div class="doc-actions">
+                <a href="/doc/{{ document.id }}/edit" class="btn">✏️ Edit Document</a>
+                <button onclick="deleteDocument('{{ document.id }}', '{{ document.title }}')" class="btn btn-danger">🗑️ Delete Document</button>
+                <a href="/docs" class="btn btn-secondary">📄 Back to Documents</a>
+                <a href="/search?q={{ document.title.split()[0] if document.title else '' }}" class="btn btn-secondary">🔍 Find Similar</a>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">
+                <h4>✅ Database-Backed Document</h4>
+                <p>This document is stored in PostgreSQL with full CRUD operations:</p>
+                <ul>
+                    <li><strong>Persistent Storage:</strong> Data survives container restarts</li>
+                    <li><strong>Full-Text Search:</strong> Searchable across title, content, and summary</li>
+                    <li><strong>URL Slugs:</strong> SEO-friendly URLs generated automatically</li>
+                    <li><strong>Timestamps:</strong> Automatic creation and update tracking</li>
+                    <li><strong>API Access:</strong> Available via REST API at <code>/api/documents/{{ document.id }}</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function deleteDocument(docId, docTitle) {
+            if (!confirm(`Are you sure you want to delete "${docTitle}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/doc/${docId}/delete`, {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    showAlert('Document deleted successfully!', 'success');
+                    // Redirect to documents list after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/docs';
+                    }, 1500);
+                } else {
+                    showAlert('Error deleting document', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting document: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

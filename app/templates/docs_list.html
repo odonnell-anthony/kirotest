@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Wiki App</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .doc-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .doc-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            transition: transform 0.2s;
+        }
+        .doc-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .doc-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .doc-summary {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+        .doc-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+        }
+        .btn-small:hover {
+            background: #2980b9;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📚 Wiki Documentation App</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            <div class="toolbar">
+                <h2>{{ title }}</h2>
+                <div>
+                    <a href="/create" class="btn">✏️ Create New Document</a>
+                    <a href="/search" class="btn">🔍 Search</a>
+                    <a href="/" class="btn btn-secondary">🏠 Home</a>
+                </div>
+            </div>
+
+            <div class="doc-list">
+                {% for doc in documents %}
+                <div class="doc-item">
+                    <div class="doc-title">{{ doc.title }}</div>
+                    <div class="doc-summary">{{ doc.summary }}</div>
+                    <div class="doc-actions">
+                        <a href="/doc/{{ doc.id }}" class="btn-small">📖 Read</a>
+                        <a href="/doc/{{ doc.id }}/edit" class="btn-small" style="background: #f39c12;">✏️ Edit</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not documents %}
+            <div class="alert">
+                <h3>No documents found</h3>
+                <p>Get started by creating your first document!</p>
+                <a href="/create" class="btn">Create First Document</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
