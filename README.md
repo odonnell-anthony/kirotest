@@ -1,5 +1,5 @@
 This is the output of a trial with amazon Kiro
-[https://github.com/odonnell-anthony/kirotest](https://kiro.dev/blog/introducing-kiro/)
+[kiro](https://kiro.dev/blog/introducing-kiro/)
 
 its not great!
 
